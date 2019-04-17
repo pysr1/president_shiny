@@ -1,0 +1,133 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r package import}
+# library for getting wikipedia page view data
+library(pageviews)
+
+# blanket import for all tidyverse packages
+library(tidyverse)
+
+# library for dealing with dates
+library(lubridate)
+
+```
+
+In the following chunk I define several functions and import the data needed to analyze wikipedia page trends
+
+```{r functions and data import}
+# define a function to get a subjects weekly pageviews
+
+get_subjects = function(term){
+# call the function very similar to how shown in documentation
+# select the only the date and views column
+
+  pageviews = article_pageviews(project = "en.wikipedia", article = term
+  , start = as.Date('2018-01-01'), end = Sys.Date()
+  , user_type = c("user", "bot", "spider"), platform = c("desktop", "mobile-web")) %>% select(date, views)
+#return a dataframe
+return(pageviews)
+}
+
+# define a function that calls get_subjects and aggregates the dataframe to weekly frequency
+# this helps to smooth the series and seperate the signal from the noise
+
+get_weekly_subjects = function(term){
+  # call get_subjects with the term
+  df = get_subjects(term)
+  df = df %>% 
+    # group by week
+    group_by(week=floor_date(date, "weeks")) %>%
+    # calcualte total traffic
+    summarize(Weekly_Traffic =sum(views))
+    # create a column with the same name as the term
+    df[,term] = log10(df$Weekly_Traffic)
+    #The last week will never be complete so don't want to include it since we are taking a sum
+    n = length(df$Weekly_Traffic) - 1
+    return(df %>% head(n) %>% select(-Weekly_Traffic))
+}
+
+get_daily_subjects = function(term){
+  # call get_subjects with the term
+  df = get_subjects(term)
+  df = df %>% 
+    # group by week
+    group_by(date) %>%
+    # calcualte total traffic
+    summarize(Weekly_Traffic =sum(views))
+    # create a column with the same name as the term
+    df[,term] = log10(df$Weekly_Traffic)
+    #The last week will never be complete so don't want to include it since we are taking a sum
+    n = length(df$Weekly_Traffic) - 1
+    return(df %>% head(n) %>% select(-Weekly_Traffic))
+}
+
+
+candidates = c(
+    "Cory Booker",
+    "Pete Buttigieg",
+    "Julian_Castro",
+    "John Delaney",
+    "Tulsi Gabbard",
+    "Kirsten Gillibrand",
+    "Mike Gravel",
+    "Kamala Harris",
+    "John Hickenlooper",
+    "Jay Inslee",
+    "Amy Klobuchar",
+    "Wayne Messam",
+    "Beto O'Rourke",
+    "Tim Ryan",
+    "Bernie Sanders",
+    "Eric Swalwell",
+    "Elizabeth Warren",
+    "Marianne Williamson",
+    "Andrew Yang",
+    "Donald Trump",
+    "Bill Weld"
+)
+
+# the map function takes the list of subjects and call the get_weekly_subjects function on each element of the list
+# the reduce function uses left joins to create a subjects
+
+subjects = map(candidates, get_weekly_subjects) %>% reduce(left_join, by = "week")
+```
+
+```{r}
+subjects
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+library(plotly)
+plot = subjects %>% gather(key, value, -week) %>% ggplot(aes(week, value))+
+  geom_point(alpha = 0.3, size = 0.6)+
+  geom_smooth(method = "loess", se = F)+
+  #geom_line()+
+  labs( x = "Date", y= "Log10 Weekly Searchs")+
+  facet_wrap(~key, scales = "free_y")+
+  theme_classic()
+
+plot
+```
+
+```{r}
+10^5.5
+```
+
+
+```{r}
+subjects %>% gather(key, value, -week) %>% ggplot(aes(week, value, color = key))+
+  geom_point(alpha = 0.1)+
+  theme_light()+
+  geom_smooth(method = "loess", alpha = 0.3, se=F)+
+  labs( x = "Date", y= "Log10 Weekly Searchs")
+
+```
+
+
+=
