@@ -28,7 +28,7 @@ get_subjects = function(term){
 
   pageviews = article_pageviews(project = "en.wikipedia", article = term
   , start = as.Date('2018-01-01'), end = Sys.Date()
-  , user_type = c("user", "bot", "spider"), platform = c("desktop", "mobile-web")) %>% select(date, views)
+  , user_type = c("user"), platform = c("desktop", "mobile-web")) %>% select(date, views)
 #return a dataframe
 return(pageviews)
 }
@@ -94,7 +94,7 @@ candidates = c(
 # the map function takes the list of subjects and call the get_weekly_subjects function on each element of the list
 # the reduce function uses left joins to create a subjects
 
-subjects = map(candidates, get_weekly_subjects) %>% reduce(left_join, by = "week")
+subjects = map(candidates, get_daily_subjects) %>% reduce(left_join, by = "date") %>% rename(Date = date)
 ```
 
 ```{r}
@@ -103,20 +103,20 @@ subjects
 
 
 ```{r, warning=FALSE, message=FALSE}
-library(plotly)
-plot = subjects %>% gather(key, value, -week) %>% ggplot(aes(week, value))+
-  geom_point(alpha = 0.3, size = 0.6)+
+
+plot = subjects %>% gather(key, value, -Date) %>% ggplot(aes(Date, value))+
+  geom_point(alpha = 0.1, size = 0.6)+
   geom_smooth(method = "loess", se = F)+
   #geom_line()+
   labs( x = "Date", y= "Log10 Weekly Searchs")+
-  facet_wrap(~key, scales = "free_y")+
+  facet_wrap(~key)+
   theme_classic()
 
 plot
 ```
 
 ```{r}
-10^5.5
+date
 ```
 
 
