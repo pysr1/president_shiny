@@ -45,7 +45,7 @@ get_weekly_subjects = function(term){
     # calcualte total traffic
     summarize(Weekly_Traffic =sum(views))
     # create a column with the same name as the term
-    df[,term] = log10(df$Weekly_Traffic)
+    df[,term] = df$Weekly_Traffic
     #The last week will never be complete so don't want to include it since we are taking a sum
     n = length(df$Weekly_Traffic) - 1
     return(df %>% head(n) %>% select(-Weekly_Traffic))
@@ -60,7 +60,7 @@ get_daily_subjects = function(term){
     # calcualte total traffic
     summarize(Weekly_Traffic =sum(views))
     # create a column with the same name as the term
-    df[,term] = log10(df$Weekly_Traffic)
+    df[,term] = df$Weekly_Traffic
     #The last week will never be complete so don't want to include it since we are taking a sum
     n = length(df$Weekly_Traffic) - 1
     return(df %>% head(n) %>% select(-Weekly_Traffic))
@@ -88,7 +88,8 @@ candidates = c(
     "Marianne Williamson",
     "Andrew Yang",
     "Donald Trump",
-    "Bill Weld"
+    "Bill Weld",
+    "Joe Biden"
 )
 
 # the map function takes the list of subjects and call the get_weekly_subjects function on each element of the list
@@ -104,9 +105,9 @@ subjects
 
 ```{r, warning=FALSE, message=FALSE}
 
-plot = subjects %>% gather(key, value, -Date) %>% ggplot(aes(Date, value))+
+plot = subjects %>% gather(key, value, -Date) %>% mutate(value = log10(value)) %>% ggplot(aes(Date, value))+
   geom_point(alpha = 0.1, size = 0.6)+
-  geom_smooth(method = "loess", se = F)+
+  geom_smooth(method = "lm", se = F)+
   #geom_line()+
   labs( x = "Date", y= "Log10 Weekly Searchs")+
   facet_wrap(~key)+
@@ -116,7 +117,62 @@ plot
 ```
 
 ```{r}
-date
+library(plotly)
+plot = subjects %>% gather(key, value, -Date) %>% group_by(key) %>% summarise(value = mean(value, na.rm = T)) %>% ggplot(aes(reorder(key, -value), value))+
+  geom_col()+
+  theme_classic()+
+  coord_flip()+
+  
+  labs(x = "", y = "Average Interest (Wikiepdia Page Views)")
+ggplotly(plot) 
+```
+
+```{r}
+library(billboarder)
+
+```
+
+
+```{r}
+library(billboarder)
+agg = subjects %>% gather(key, value, -Date) %>% group_by(key) %>% summarise(value = mean(value, na.rm = T)) %>% arrange(desc(value)) 
+billboarder() %>% 
+  bb_barchart(data = agg, rotated = T) %>% 
+  bb_legend(show = FALSE)
+
+```
+
+
+```{r}
+subjects %>% gather(key, value, -Date) %>% group_by(key) %>% summarise(value = sum(value))
+```
+
+
+
+```{r}
+subjects %>% gather(key, value, -Date) %>% filter(key %in% c("Donald Trump",  "Pete Buttigieg")) %>% ggplot(aes(Date, value, color = key))+
+  geom_line(alpha = 0.3)+
+  #geom_point()+
+  geom_smooth(se=F)+
+  theme_classic()
+```
+
+```{r}
+subjects %>% gather(key, value, -Date) %>% filter(key %in% c("Andrew Yang", "Donald Trump")) %>% ggplot(aes(Date, value, color = key))+
+  geom_line(alpha = 0.3)+
+  #geom_point()+
+  geom_smooth(se=F)+
+  theme_classic()
+```
+
+
+
+
+```{r}
+subjects %>% gather(key, value, -Date) %>% filter(key %in% c("Joe Biden")) %>% 
+  ggplot(aes(Date, value, color = key))+
+  geom_line()+
+  theme_classic()
 ```
 
 
