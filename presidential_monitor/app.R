@@ -58,7 +58,7 @@ get_daily_subjects = function(term){
 candidates = c(
     "Cory Booker",
     "Pete Buttigieg",
-    "Julian_Castro",
+    "Julian Castro",
     #"John Delaney",
     "Tulsi Gabbard",
     "Kirsten Gillibrand",
@@ -135,7 +135,7 @@ body <- dashboardBody(
         
         
         tabItem(tabName = "plot_line2",
-                billboarderOutput("plot2", height = 700))   
+                billboarderOutput("plot2", height = '700px'))   
     )  
 )  
 

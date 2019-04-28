@@ -70,7 +70,7 @@ get_daily_subjects = function(term){
 candidates = c(
     "Cory Booker",
     "Pete Buttigieg",
-    "Julian_Castro",
+    "Julian Castro",
     "John Delaney",
     "Tulsi Gabbard",
     "Kirsten Gillibrand",
@@ -144,17 +144,27 @@ billboarder() %>%
 
 
 ```{r}
-subjects %>% gather(key, value, -Date) %>% group_by(key) %>% summarise(value = sum(value))
+subjects %>% gather(key, value, -Date) %>% group_by(key) %>% summarise(value = sum(value, na.rm = T))
 ```
 
 
 
 ```{r}
-subjects %>% gather(key, value, -Date) %>% filter(key %in% c("Donald Trump",  "Pete Buttigieg")) %>% ggplot(aes(Date, value, color = key))+
-  geom_line(alpha = 0.3)+
-  #geom_point()+
-  geom_smooth(se=F)+
-  theme_classic()
+library(ggthemes)
+library(plotly)
+plot = subjects %>% gather(key, value, -Date) %>% filter(key %in% c("Donald Trump",  "Pete Buttigieg"))%>%
+rename(Candidate = key, Views = value) %>% 
+mutate(Views = log10(Views)) %>% 
+
+ggplot(aes(Date, Views, color = Candidate, text = as.Date(Date)))+
+  geom_smooth(se=F, method = 'loess')+
+  geom_line(alpha = 0.2)+
+  labs(title = "Democratic Front Runners v. Trump", y = "Log10 Wikipedia Pageviews", x = "Date")+
+  
+  theme_economist()
+
+ggplotly(plot, tooltip = c("text", "y"))
+
 ```
 
 ```{r}
